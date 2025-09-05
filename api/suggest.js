@@ -48,7 +48,7 @@ Focus on:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "meta-llama/llama-4-maverick-17b-128e-instruct",
+          model: "llama-3.1-8b-instant",
           messages: [{ role: "user", content: aiPrompt }],
           temperature: 0.3,
           max_tokens: 2500,
