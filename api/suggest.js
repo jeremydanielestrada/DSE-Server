@@ -50,8 +50,6 @@ Focus on:
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
           messages: [{ role: "user", content: aiPrompt }],
-          temperature: 0.3,
-          max_tokens: 2500,
         }),
       }
     );
