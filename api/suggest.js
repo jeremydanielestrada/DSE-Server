@@ -87,7 +87,7 @@ ${css}
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "llama-3.1-70b-versatile", // Upgraded for better code analysis
+          model: "llama-3.3-70b-versatile", // Updated to current Groq model (was llama-3.1-70b-versatile)
           messages: [{ role: "user", content: aiPrompt }],
           temperature: 0.3, // Lower temperature for more consistent, focused responses
           max_tokens: 4000, // Ensure enough tokens for detailed analysis
@@ -96,8 +96,14 @@ ${css}
     );
 
     if (!response.ok) {
+      const errorBody = await response.text();
+      console.error("Groq API Error Details:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorBody,
+      });
       throw new Error(
-        `Groq API error: ${response.status} ${response.statusText}`
+        `Groq API error: ${response.status} ${response.statusText} - ${errorBody}`
       );
     }
 
