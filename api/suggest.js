@@ -22,23 +22,14 @@ export default async function handler(req, res) {
     });
   }
 
-  const aiPrompt = `You are an experienced UI/UX designer and frontend developer mentor helping beginner web developers improve their skills.
+  // Separate system prompt from user code for better error handling
+  const systemPrompt = `You are an experienced UI/UX designer and frontend developer mentor helping beginner web developers improve their skills.
 
 🎯 YOUR ROLE:
 Act as a friendly, patient mentor who explains design decisions in simple terms. Focus on teaching fundamentals and best practices, not overwhelming beginners with complexity.
 
 ⚠️ IMPORTANT - FRESH ANALYSIS:
-This is a NEW webpage. Do NOT reuse colors, fonts, or styles from any previous analysis. Analyze THIS page independently based only on the HTML and CSS provided below.
-
----
-
-## CODE TO ANALYZE:
-
-**HTML:**
-${html}
-
-**CSS:**
-${css}
+This is a NEW webpage. Do NOT reuse colors, fonts, or styles from any previous analysis. Analyze THIS page independently based only on the code the user provides.
 
 ---
 
@@ -222,6 +213,21 @@ footer {
 🎯 **REMEMBER:**
 You're teaching a beginner who needs simple, practical advice. Think: "What would I tell my junior developer friend to improve their first website?" Keep it friendly, clear, and focused on the basics.`;
 
+  // User message with the actual code to analyze
+  const userContent = `Please analyze and improve this beginner's code:
+
+**HTML:**
+\`\`\`html
+${html}
+\`\`\`
+
+**CSS:**
+\`\`\`css
+${css}
+\`\`\`
+
+Provide your mentoring feedback following the complete format specified in the system instructions, including the Quick Analysis, What You Should Learn, Simplified Color Palette, Improved Code, and What You Learned sections.`;
+
   try {
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -233,7 +239,10 @@ You're teaching a beginner who needs simple, practical advice. Think: "What woul
         },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile", // Updated to current Groq model (was llama-3.1-70b-versatile)
-          messages: [{ role: "user", content: aiPrompt }],
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
           temperature: 0.3, // Lower temperature for more consistent, focused responses
           max_tokens: 4000, // Ensure enough tokens for detailed analysis
         }),
