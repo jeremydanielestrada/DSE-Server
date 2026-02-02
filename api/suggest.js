@@ -213,20 +213,16 @@ footer {
 🎯 **REMEMBER:**
 You're teaching a beginner who needs simple, practical advice. Think: "What would I tell my junior developer friend to improve their first website?" Keep it friendly, clear, and focused on the basics.`;
 
-  // User message with the actual code to analyze
-  const userContent = `Please analyze and improve this beginner's code:
-
-**HTML:**
-\`\`\`html
-${html}
-\`\`\`
-
-**CSS:**
-\`\`\`css
-${css}
-\`\`\`
-
-Provide your mentoring feedback following the complete format specified in the system instructions, including the Quick Analysis, What You Should Learn, Simplified Color Palette, Improved Code, and What You Learned sections.`;
+  // Build user message safely without template literals to avoid parsing issues
+  const userContent =
+    "Please analyze and improve this beginner's code:\n\n" +
+    "**HTML:**\n```html\n" +
+    html +
+    "\n```\n\n" +
+    "**CSS:**\n```css\n" +
+    css +
+    "\n```\n\n" +
+    "Provide your mentoring feedback following the complete format specified in the system instructions, including the Quick Analysis, What You Should Learn, Simplified Color Palette, Improved Code, and What You Learned sections.";
 
   try {
     const response = await fetch(
