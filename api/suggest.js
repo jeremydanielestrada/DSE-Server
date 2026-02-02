@@ -8,14 +8,18 @@ export default async function handler(req, res) {
   const { html, css } = req.body;
 
   // Input validation
-  if (!html || !css) {
+  if (!html) {
     return res.status(400).json({
       success: false,
-      error: "Both HTML and CSS content are required",
+      error: "HTML content is required",
     });
   }
 
-  if (html.length > 20000 || css.length > 20000) {
+  // CSS can be empty for inline-styled pages
+  const cssContent =
+    css || "/* No external CSS detected - page uses inline styles */";
+
+  if (html.length > 20000 || cssContent.length > 20000) {
     return res.status(400).json({
       success: false,
       error: "HTML or CSS content is too large (max 20,000 characters each)",
@@ -220,7 +224,7 @@ You're teaching a beginner who needs simple, practical advice. Think: "What woul
     html +
     "\n```\n\n" +
     "**CSS:**\n```css\n" +
-    css +
+    cssContent +
     "\n```\n\n" +
     "Provide your mentoring feedback following the complete format specified in the system instructions, including the Quick Analysis, What You Should Learn, Simplified Color Palette, Improved Code, and What You Learned sections.";
 
