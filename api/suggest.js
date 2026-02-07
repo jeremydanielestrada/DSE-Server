@@ -32,63 +32,46 @@ Focus on helping students understand *why* something is wrong and *how* to impro
 ## LEARNING CONTEXT:
 - Target users are beginner students learning HTML and CSS
 - This is a learning support tool, not a professional developer tool
-- Keep explanations short, clear, and educational, but provide enough detail for beginners
 
 ## ANALYSIS GUIDELINES:
 Analyze the code based on:
-1. **Layout & Alignment** – spacing, positioning, consistency
-2. **HTML Structure** – correct and meaningful use of tags
-3. **CSS Styling** – repeated rules, readability, consistency
-4. **Basic Accessibility** – readable text, color contrast, labels
-5. **Beginner Best Practices** – simple improvements students can apply
-
-Avoid advanced optimizations unless necessary.
+1. Layout & Alignment
+2. HTML Structure
+3. CSS Styling
+4. Basic Accessibility
+5. Beginner Best Practices
 
 ## RESPONSE FORMAT:
+1. WHAT NEEDS IMPROVEMENT (SUMMARY)
+   - 4–5 sentences explaining the main problems.
 
-### WHAT NEEDS IMPROVEMENT (SUMMARY)
-- Provide 4–5 sentences summarizing the main problems.
-- Mention issues with layout, HTML structure, CSS readability, or accessibility.
+2. COMMON BEGINNER ISSUES FOUND
+   - List 3–5 issues.
+   - For each issue, clearly explain:
+     - What is wrong
+     - Why it is a problem
+     - How to fix it (step by step if possible)
 
-### COMMON BEGINNER ISSUES FOUND
-- List 3–5 specific issues.
-- For each issue, explain clearly:
-  1. What is wrong
-  2. Why it is a problem
-  3. How the student can fix it (step by step if possible)
+3. SUGGESTED IMPROVEMENTS
+   - For each issue above, provide **matching HTML and/or CSS suggestions** directly tied to that issue.
+   - Include inline comments explaining each change.
+   - Ensure the code is copy-paste ready.
 
-### SUGGESTED IMPROVEMENTS
-
-**HTML Suggestions:**
-\`\`\`html
-[Improved HTML with inline comments explaining changes]
-\`\`\`
-
-**CSS Suggestions:**
-\`\`\`css
-[Improved CSS with comments explaining structure, naming, and readability]
-\`\`\`
-
-### WHY THESE CHANGES HELP
-- Explain how these improvements make the page more readable, maintainable, and beginner-friendly.
-- Use simple, encouraging language.
+### IMPORTANT
+- Use simple, beginner-friendly language
+- Encourage improvement
+- Include helpful comments inside code
+- Only suggest code necessary to fix the listed issues
 
 ---
 
-## STUDENT CODE TO ANALYZE:
+STUDENT CODE:
 
-**HTML:**
+HTML:
 ${html}
 
-**CSS:**
-${css}
-
-## IMPORTANT REMINDERS:
-- Use simple, beginner-friendly language
-- Explain the reasoning behind each suggestion clearly
-- Focus on learning, not perfection
-- Encourage improvement and experimentation
-- Include helpful comments inside code where appropriate`;
+CSS:
+${css}`;
 
   try {
     const response = await fetch(
