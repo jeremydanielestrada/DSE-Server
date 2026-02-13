@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-export async function promptHandler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -70,7 +70,7 @@ ${prompt}
 
     return res.status(200).json({
       success: true,
-      response: data.choices[0].text.trim(),
+      response: data.choices[0].message.content.trim(),
     });
   } catch (err) {
     console.error("Error in prompt API:", err);
