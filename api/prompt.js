@@ -1,4 +1,5 @@
-import fetch from "node-fetch";
+import { buildFollowupPrompt } from "../src/prompts/promptFollowup.js";
+import { groqChatCompletions } from "../src/services/groqChat.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -29,48 +30,23 @@ export default async function handler(req, res) {
     });
   }
 
-  const aiPrompt = `You are an expert web developer and UI/UX designer.. A user received the following AI analysis of their code and has a follow-up question.
-
-## Previous Analysis:
-${content}
-
-## User's Question:
-${prompt}
-
-## Instructions:
-- Answer the user's question directly and concisely
-- Reference specific parts of the analysis when relevant
-- Provide code examples if requested
-- Be practical and actionable
-- If the question is unclear, ask for clarification`;
+  const aiPrompt = buildFollowupPrompt({ prompt, content });
 
   try {
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
-          messages: [{ role: "user", content: aiPrompt }],
-          max_tokens: 1000,
-          temperature: 0.7,
-        }),
-      },
-    );
-
-    const data = await response.json();
+    const { response, json } = await groqChatCompletions({
+      model: "llama-3.1-8b-instant",
+      messages: [{ role: "user", content: aiPrompt }],
+      max_tokens: 1000,
+      temperature: 0.7,
+    });
 
     if (!response.ok) {
-      throw new Error(data.error?.message || "Failed to get response");
+      throw new Error(json?.error?.message || "Failed to get response");
     }
 
     return res.status(200).json({
       success: true,
-      response: data.choices[0].message.content.trim(),
+      response: json.choices[0].message.content.trim(),
     });
   } catch (err) {
     console.error("Error in prompt API:", err);
