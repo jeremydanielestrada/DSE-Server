@@ -132,7 +132,25 @@ Avoid advanced optimizations unless necessary.
 - Semantics improved?
 - Reduced repeated CSS?
 - Basic accessibility improved (contrast/labels/alt)?
-- More consistent spacing/alignment?`;
+- More consistent spacing/alignment?
+
+## PARSEABLE OUTPUT (REQUIRED):
+After the Markdown response above, output ONE final code block exactly like this:
+\`\`\`json
+{
+  "summary_markdown": "...",
+  "issues_markdown": "...",
+  "improved_html": "...",
+  "improved_css": "...",
+  "why_markdown": "...",
+  "checklist_markdown": "..."
+}
+\`\`\`
+Rules:
+- The JSON block must be valid JSON.
+- Use \\n for newlines inside JSON strings.
+- The JSON fields must match what you wrote in the Markdown sections (same content).
+- Do not add any other text after the JSON code block.`;
 
   const user = `## STUDENT CODE TO ANALYZE
 
