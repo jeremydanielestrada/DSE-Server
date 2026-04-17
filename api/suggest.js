@@ -1,4 +1,4 @@
-import { buildSuggestTutorPrompt } from "../src/prompts/suggestTutor.js";
+import { buildSuggestTutorMessages } from "../src/prompts/suggestTutor.js";
 import { groqChatCompletions } from "../src/services/groqChat.js";
 
 export default async function handler(req, res) {
@@ -23,12 +23,12 @@ export default async function handler(req, res) {
     });
   }
 
-  const aiPrompt = buildSuggestTutorPrompt({ html, css });
+  const messages = buildSuggestTutorMessages({ html, css });
 
   try {
     const { response, text: errorBody, json: data } = await groqChatCompletions({
       model: "llama-3.3-70b-versatile", // Updated to current Groq model (was llama-3.1-70b-versatile)
-      messages: [{ role: "user", content: aiPrompt }],
+      messages,
       temperature: 0.3, // Lower temperature for more consistent, focused responses
       max_tokens: 4000, // Ensure enough tokens for detailed analysis
     });
@@ -65,4 +65,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
