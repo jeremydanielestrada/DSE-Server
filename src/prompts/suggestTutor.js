@@ -85,7 +85,7 @@ The JSON must match this schema exactly:
   "confidence": "low|medium|high"
 }
 Rules:
-- Use \\\\n for newlines inside JSON strings.
+- Use \\n (newline escape) inside JSON strings.
 - Keep strings concise and beginner-friendly.
 - \`snippet\` must be 1–2 lines copied from the student's code (HTML or CSS).
 - \`preview_html\` must be a FULL HTML document (include <!doctype html>, <html>, <head>, <body>). It MUST NOT include <script>.

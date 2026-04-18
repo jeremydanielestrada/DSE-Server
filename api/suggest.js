@@ -24,6 +24,9 @@ function tryParseJsonObject(text) {
 function normalizeToLegacyFields(parsed) {
   if (!parsed || typeof parsed !== "object") return null;
 
+  const unescapeNewlines = (value) =>
+    typeof value === "string" ? value.replace(/\\n/g, "\n") : value;
+
   // v2 -> legacy
   if (parsed.version === "v2") {
     const summary_markdown = Array.isArray(parsed.summary_bullets)
@@ -59,8 +62,8 @@ function normalizeToLegacyFields(parsed) {
     return {
       summary_markdown,
       issues_markdown,
-      improved_html: parsed.improved_html || "",
-      improved_css: parsed.improved_css || "",
+      improved_html: unescapeNewlines(parsed.improved_html || ""),
+      improved_css: unescapeNewlines(parsed.improved_css || ""),
       why_markdown,
       checklist_markdown,
     };
@@ -70,8 +73,8 @@ function normalizeToLegacyFields(parsed) {
   return {
     summary_markdown: parsed.summary_markdown || "",
     issues_markdown: parsed.issues_markdown || "",
-    improved_html: parsed.improved_html || "",
-    improved_css: parsed.improved_css || "",
+    improved_html: unescapeNewlines(parsed.improved_html || ""),
+    improved_css: unescapeNewlines(parsed.improved_css || ""),
     why_markdown: parsed.why_markdown || "",
     checklist_markdown: parsed.checklist_markdown || "",
   };
