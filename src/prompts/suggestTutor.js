@@ -99,58 +99,22 @@ Avoid advanced optimizations unless necessary.
 - In the improved code blocks, do NOT use placeholders. Output real improved code.
 - Limit length: max 5 bullets per list, max 12 total sentences outside code blocks.
 
-## RESPONSE FORMAT (follow exactly):
-
-### WHAT NEEDS IMPROVEMENT (SUMMARY)
-- Provide 4–5 sentences summarizing the main problems.
-- Mention issues with layout, HTML structure, CSS readability, or accessibility.
-
-### COMMON BEGINNER ISSUES FOUND
-- List 3–5 specific issues.
-- For each issue, explain clearly:
-  1. What is wrong
-  2. Why it is a problem
-  3. How the student can fix it (step by step if possible)
-
-### SUGGESTED IMPROVEMENTS
-
-**HTML Suggestions:**
-\`\`\`html
-[Full improved HTML here]
-\`\`\`
-
-**CSS Suggestions:**
-\`\`\`css
-[Full improved CSS here]
-\`\`\`
-
-### WHY THESE CHANGES HELP
-- Explain how these improvements make the page more readable, maintainable, and beginner-friendly.
-- Use simple, encouraging language.
-
-### QUICK CHECKLIST (YES/NO)
-- Semantics improved?
-- Reduced repeated CSS?
-- Basic accessibility improved (contrast/labels/alt)?
-- More consistent spacing/alignment?
-
-## PARSEABLE OUTPUT (REQUIRED):
-After the Markdown response above, output ONE final code block exactly like this:
-\`\`\`json
+## RESPONSE FORMAT (IMPORTANT):
+Return ONLY one valid JSON object (no Markdown, no code fences, no extra text).
+The JSON must match this schema exactly:
 {
-  "summary_markdown": "...",
-  "issues_markdown": "...",
-  "improved_html": "...",
-  "improved_css": "...",
-  "why_markdown": "...",
-  "checklist_markdown": "..."
+  "summary_markdown": "string",
+  "issues_markdown": "string",
+  "improved_html": "string",
+  "improved_css": "string",
+  "why_markdown": "string",
+  "checklist_markdown": "string"
 }
-\`\`\`
 Rules:
-- The JSON block must be valid JSON.
+- Keep markdown simple (bullets and short paragraphs).
 - Use \\n for newlines inside JSON strings.
-- The JSON fields must match what you wrote in the Markdown sections (same content).
-- Do not add any other text after the JSON code block.`;
+- Do not include any other keys.
+- Do not include any text before or after the JSON.`;
 
   const user = `## STUDENT CODE TO ANALYZE
 

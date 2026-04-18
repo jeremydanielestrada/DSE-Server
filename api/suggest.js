@@ -2,6 +2,48 @@ import { buildSuggestTutorMessages } from "../src/prompts/suggestTutor.js";
 import { groqChatCompletions } from "../src/services/groqChat.js";
 import { rateLimit } from "../src/services/rateLimit.js";
 
+function tryParseJsonObject(text) {
+  if (!text) return null;
+  const str = String(text).trim();
+  try {
+    return JSON.parse(str);
+  } catch {}
+
+  // Fallback: extract first {...} block
+  const firstBrace = str.indexOf("{");
+  const lastBrace = str.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const candidate = str.slice(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch {}
+  }
+  return null;
+}
+
+function buildMarkdownFromParsed(parsed) {
+  if (!parsed || typeof parsed !== "object") return "";
+  const summary = parsed.summary_markdown || "";
+  const issues = parsed.issues_markdown || "";
+  const why = parsed.why_markdown || "";
+  const checklist = parsed.checklist_markdown || "";
+
+  const parts = [
+    "### WHAT NEEDS IMPROVEMENT (SUMMARY)",
+    summary,
+    "",
+    "### COMMON BEGINNER ISSUES FOUND",
+    issues,
+    "",
+    "### WHY THESE CHANGES HELP",
+    why,
+  ];
+  if (checklist) {
+    parts.push("", "### QUICK CHECKLIST (YES/NO)", checklist);
+  }
+  return parts.filter(Boolean).join("\n");
+}
+
 function extractRetryAfterMs(text) {
   if (!text) return null;
   const m = String(text).match(/try again in\s+(\d+)m(\d+(?:\.\d+)?)s/i);
@@ -93,20 +135,11 @@ export default async function handler(req, res) {
       throw new Error("No response content from AI model");
     }
 
-    let parsed = null;
-    try {
-      const matches = [...aiResponse.matchAll(/```json\\s*([\\s\\S]*?)```/gi)];
-      const last = matches[matches.length - 1];
-      if (last?.[1]) {
-        parsed = JSON.parse(last[1]);
-      }
-    } catch {
-      parsed = null;
-    }
+    const parsed = tryParseJsonObject(aiResponse);
 
     return res.status(200).json({
       success: true,
-      analysis: aiResponse,
+      analysis: parsed ? buildMarkdownFromParsed(parsed) : aiResponse,
       usage: data.usage, // Include token usage info
       parsed,
     });
