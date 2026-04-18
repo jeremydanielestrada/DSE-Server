@@ -192,7 +192,27 @@ export default async function handler(req, res) {
     }
 
     const parsed = tryParseJsonObject(aiResponse);
-    const parsed_legacy = parsed ? normalizeToLegacyFields(parsed) : null;
+    let parsed_legacy = parsed ? normalizeToLegacyFields(parsed) : null;
+
+    // Safety fallback: if the model returned JSON but omitted code suggestions,
+    // fall back to the original extracted code so the UI can still render.
+    if (parsed_legacy) {
+      const hasHtml = Boolean(parsed_legacy.improved_html && parsed_legacy.improved_html.trim());
+      const hasCss = Boolean(parsed_legacy.improved_css && parsed_legacy.improved_css.trim());
+      if (!hasHtml && !hasCss) {
+        parsed_legacy = {
+          ...parsed_legacy,
+          improved_html: String(html || "").trim(),
+          improved_css: String(css || "").trim(),
+          checklist_markdown: [
+            parsed_legacy.checklist_markdown,
+            "- Note: AI did not return code suggestions; showing extracted code as fallback.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        };
+      }
+    }
 
     return res.status(200).json({
       success: true,
