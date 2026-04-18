@@ -13,59 +13,21 @@ Focus on helping students understand *why* something is wrong and *how* to impro
 
 ## ANALYSIS GUIDELINES:
 Analyze the code based on:
-1. **Layout & Alignment** â€“ spacing, positioning, consistency
-2. **HTML Structure** â€“ correct and meaningful use of tags
-3. **CSS Styling** â€“ repeated rules, readability, consistency
-4. **Basic Accessibility** â€“ readable text, color contrast, labels
-5. **Beginner Best Practices** â€“ simple improvements students can apply
+1. **Layout & Alignment** – spacing, positioning, consistency
+2. **HTML Structure** – correct and meaningful use of tags
+3. **CSS Styling** – repeated rules, readability, consistency
+4. **Basic Accessibility** – readable text, color contrast, labels
+5. **Beginner Best Practices** – simple improvements students can apply
 
 Avoid advanced optimizations unless necessary.
 
-## RESPONSE FORMAT:
-
-### WHAT NEEDS IMPROVEMENT (SUMMARY)
-- Provide 4â€“5 sentences summarizing the main problems.
-- Mention issues with layout, HTML structure, CSS readability, or accessibility.
-
-### COMMON BEGINNER ISSUES FOUND
-- List 3â€“5 specific issues.
-- For each issue, explain clearly:
-  1. What is wrong
-  2. Why it is a problem
-  3. How the student can fix it (step by step if possible)
-
-### SUGGESTED IMPROVEMENTS
-
-**HTML Suggestions:**
-\`\`\`html
-[Improved HTML with inline comments explaining changes]
-\`\`\`
-
-**CSS Suggestions:**
-\`\`\`css
-[Improved CSS with comments explaining structure, naming, and readability]
-\`\`\`
-
-### WHY THESE CHANGES HELP
-- Explain how these improvements make the page more readable, maintainable, and beginner-friendly.
-- Use simple, encouraging language.
-
----
-
 ## STUDENT CODE TO ANALYZE:
 
-**HTML:**
+HTML:
 ${html}
 
-**CSS:**
-${css}
-
-## IMPORTANT REMINDERS:
-- Use simple, beginner-friendly language
-- Explain the reasoning behind each suggestion clearly
-- Focus on learning, not perfection
-- Encourage improvement and experimentation
-- Include helpful comments inside code where appropriate`;
+CSS:
+${css}`;
 }
 
 export function buildSuggestTutorMessages({ html, css }) {
@@ -96,37 +58,49 @@ Avoid advanced optimizations unless necessary.
 - Do NOT invent requirements (no fake libraries/frameworks/files). If unsure, say "Not sure based on the code shown."
 - When you point out a problem, include a short snippet from the student's code that shows it (1–2 lines max).
 - Keep changes minimal and preserve the student's intent/design.
-- In the improved code blocks, do NOT use placeholders. Output real improved code.
-- Limit length: max 5 bullets per list, max 12 total sentences outside code blocks.
+- In the improved code fields, do NOT use placeholders. Output real improved code.
+- Limit length: max 5 bullets per list.
 
 ## RESPONSE FORMAT (IMPORTANT):
 Return ONLY one valid JSON object (no Markdown, no code fences, no extra text).
 The JSON must match this schema exactly:
 {
-  "summary_markdown": "string",
-  "issues_markdown": "string",
+  "version": "v2",
+  "summary_bullets": ["string", "string"],
+  "issues": [
+    {
+      "title": "string",
+      "snippet": "string",
+      "why_it_matters": "string",
+      "fix_steps": ["string", "string"]
+    }
+  ],
+  "top_changes": ["string", "string"],
   "improved_html": "string",
   "improved_css": "string",
-  "why_markdown": "string",
-  "checklist_markdown": "string"
+  "preview_html": "string",
+  "why_bullets": ["string", "string"],
+  "checklist": ["string", "string"],
+  "assumptions": ["string"],
+  "confidence": "low|medium|high"
 }
 Rules:
-- Keep markdown simple (bullets and short paragraphs).
-- Use \\n for newlines inside JSON strings.
+- Use \\\\n for newlines inside JSON strings.
+- Keep strings concise and beginner-friendly.
+- \`snippet\` must be 1–2 lines copied from the student's code (HTML or CSS).
+- \`preview_html\` must be a FULL HTML document (include <!doctype html>, <html>, <head>, <body>). It MUST NOT include <script>.
+- \`improved_html\` should be the improved BODY content (not a full document).
+- \`improved_css\` should be plain CSS only.
 - Do not include any other keys.
 - Do not include any text before or after the JSON.`;
 
-  const user = `## STUDENT CODE TO ANALYZE
+  const user = `STUDENT CODE:
 
-**HTML:**
-\`\`\`html
+HTML:
 ${html}
-\`\`\`
 
-**CSS:**
-\`\`\`css
-${css}
-\`\`\``;
+CSS:
+${css}`;
 
   return [
     { role: "system", content: system },

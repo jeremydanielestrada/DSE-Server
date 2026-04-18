@@ -21,25 +21,78 @@ function tryParseJsonObject(text) {
   return null;
 }
 
+function normalizeToLegacyFields(parsed) {
+  if (!parsed || typeof parsed !== "object") return null;
+
+  // v2 -> legacy
+  if (parsed.version === "v2") {
+    const summary_markdown = Array.isArray(parsed.summary_bullets)
+      ? parsed.summary_bullets.map((b) => `- ${b}`).join("\n")
+      : "";
+
+    const issues_markdown = Array.isArray(parsed.issues)
+      ? parsed.issues
+          .slice(0, 6)
+          .map((it) => {
+            const title = it?.title ? `- **${it.title}**` : "- **Issue**";
+            const snippet = it?.snippet ? `\n  - Example: \`${it.snippet}\`` : "";
+            const why = it?.why_it_matters ? `\n  - Why: ${it.why_it_matters}` : "";
+            const steps = Array.isArray(it?.fix_steps)
+              ? `\n  - Fix:\n${it.fix_steps
+                  .slice(0, 6)
+                  .map((s) => `    - ${s}`)
+                  .join("\n")}`
+              : "";
+            return `${title}${snippet}${why}${steps}`;
+          })
+          .join("\n")
+      : "";
+
+    const why_markdown = Array.isArray(parsed.why_bullets)
+      ? parsed.why_bullets.map((b) => `- ${b}`).join("\n")
+      : "";
+
+    const checklist_markdown = Array.isArray(parsed.checklist)
+      ? parsed.checklist.map((b) => `- ${b}`).join("\n")
+      : "";
+
+    return {
+      summary_markdown,
+      issues_markdown,
+      improved_html: parsed.improved_html || "",
+      improved_css: parsed.improved_css || "",
+      why_markdown,
+      checklist_markdown,
+    };
+  }
+
+  // legacy passthrough
+  return {
+    summary_markdown: parsed.summary_markdown || "",
+    issues_markdown: parsed.issues_markdown || "",
+    improved_html: parsed.improved_html || "",
+    improved_css: parsed.improved_css || "",
+    why_markdown: parsed.why_markdown || "",
+    checklist_markdown: parsed.checklist_markdown || "",
+  };
+}
+
 function buildMarkdownFromParsed(parsed) {
-  if (!parsed || typeof parsed !== "object") return "";
-  const summary = parsed.summary_markdown || "";
-  const issues = parsed.issues_markdown || "";
-  const why = parsed.why_markdown || "";
-  const checklist = parsed.checklist_markdown || "";
+  const legacy = normalizeToLegacyFields(parsed);
+  if (!legacy) return "";
 
   const parts = [
     "### WHAT NEEDS IMPROVEMENT (SUMMARY)",
-    summary,
+    legacy.summary_markdown || "",
     "",
     "### COMMON BEGINNER ISSUES FOUND",
-    issues,
+    legacy.issues_markdown || "",
     "",
     "### WHY THESE CHANGES HELP",
-    why,
+    legacy.why_markdown || "",
   ];
-  if (checklist) {
-    parts.push("", "### QUICK CHECKLIST (YES/NO)", checklist);
+  if (legacy.checklist_markdown) {
+    parts.push("", "### QUICK CHECKLIST (YES/NO)", legacy.checklist_markdown);
   }
   return parts.filter(Boolean).join("\n");
 }
@@ -136,12 +189,14 @@ export default async function handler(req, res) {
     }
 
     const parsed = tryParseJsonObject(aiResponse);
+    const parsed_legacy = parsed ? normalizeToLegacyFields(parsed) : null;
 
     return res.status(200).json({
       success: true,
       analysis: parsed ? buildMarkdownFromParsed(parsed) : aiResponse,
       usage: data.usage, // Include token usage info
       parsed,
+      parsed_legacy,
     });
   } catch (err) {
     console.error("Error in suggest API:", err);
