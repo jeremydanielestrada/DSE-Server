@@ -4,7 +4,14 @@ import { rateLimit } from "../src/services/rateLimit.js";
 
 function tryParseJsonObject(text) {
   if (!text) return null;
-  const str = String(text).trim();
+  let str = String(text).trim();
+
+  // Remove common wrappers if the model violates "JSON only"
+  str = str
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
   try {
     return JSON.parse(str);
   } catch {}
@@ -19,6 +26,59 @@ function tryParseJsonObject(text) {
     } catch {}
   }
   return null;
+}
+
+function stripScripts(html) {
+  if (!html) return "";
+  return String(html).replace(
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    "",
+  );
+}
+
+function buildPreviewHtmlDoc({ htmlBody, cssText }) {
+  const safeBody = stripScripts(htmlBody || "");
+  const safeCss = String(cssText || "");
+  return [
+    "<!doctype html>",
+    '<html lang="en">',
+    "<head>",
+    '  <meta charset="utf-8" />',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+    "  <style>",
+    "    *{box-sizing:border-box}",
+    "    html,body{margin:0;padding:8px;min-height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}",
+    safeCss,
+    "  </style>",
+    "</head>",
+    "<body>",
+    safeBody,
+    "</body>",
+    "</html>",
+  ].join("\n");
+}
+
+function extractCodeBlocks(text) {
+  const str = String(text || "");
+  const htmlMatch = str.match(/```html\s*([\s\S]*?)```/i);
+  const cssMatch = str.match(/```css\s*([\s\S]*?)```/i);
+  return {
+    html: htmlMatch?.[1]?.trim() || "",
+    css: cssMatch?.[1]?.trim() || "",
+  };
+}
+
+function buildLegacyFromMaybeMarkdown(aiResponse) {
+  const { html: improved_html, css: improved_css } = extractCodeBlocks(aiResponse);
+  if (!improved_html && !improved_css) return null;
+  return {
+    summary_markdown: "",
+    issues_markdown: "",
+    improved_html,
+    improved_css,
+    why_markdown: "",
+    checklist_markdown: "",
+  };
 }
 
 function normalizeToLegacyFields(parsed) {
@@ -193,6 +253,36 @@ export default async function handler(req, res) {
 
     const parsed = tryParseJsonObject(aiResponse);
     let parsed_legacy = parsed ? normalizeToLegacyFields(parsed) : null;
+
+    if (!parsed) {
+      // Log a short snippet for debugging JSON failures (never log full user code)
+      console.warn("Suggest parse failed: non-JSON response from model", {
+        sample: String(aiResponse).slice(0, 500),
+      });
+      parsed_legacy = buildLegacyFromMaybeMarkdown(aiResponse);
+    }
+
+    // Enforce v2 safety: ensure preview + code exist even if model omits them
+    if (parsed && parsed.version === "v2") {
+      if (typeof parsed.improved_html !== "string" || !parsed.improved_html.trim()) {
+        parsed.improved_html = stripScripts(html).slice(0, 20_000);
+      } else {
+        parsed.improved_html = stripScripts(parsed.improved_html);
+      }
+
+      if (typeof parsed.improved_css !== "string" || !parsed.improved_css.trim()) {
+        parsed.improved_css = String(css || "").slice(0, 20_000);
+      }
+
+      if (typeof parsed.preview_html !== "string" || !parsed.preview_html.trim()) {
+        parsed.preview_html = buildPreviewHtmlDoc({
+          htmlBody: parsed.improved_html,
+          cssText: parsed.improved_css,
+        });
+      } else {
+        parsed.preview_html = stripScripts(parsed.preview_html);
+      }
+    }
 
     // Safety fallback: if the model returned JSON but omitted code suggestions,
     // fall back to the original extracted code so the UI can still render.
