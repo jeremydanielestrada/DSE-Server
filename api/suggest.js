@@ -16,6 +16,15 @@ function tryParseJsonObject(text) {
     return JSON.parse(str);
   } catch {}
 
+  // Repair pass: some model outputs include raw newlines inside JSON string
+  // values (invalid JSON). Escape those newlines and try again.
+  const repaired = repairJsonLikeString(str);
+  if (repaired && repaired !== str) {
+    try {
+      return JSON.parse(repaired);
+    } catch {}
+  }
+
   // Fallback: extract first {...} block
   const firstBrace = str.indexOf("{");
   const lastBrace = str.lastIndexOf("}");
@@ -24,8 +33,60 @@ function tryParseJsonObject(text) {
     try {
       return JSON.parse(candidate);
     } catch {}
+
+    const repairedCandidate = repairJsonLikeString(candidate);
+    if (repairedCandidate && repairedCandidate !== candidate) {
+      try {
+        return JSON.parse(repairedCandidate);
+      } catch {}
+    }
   }
   return null;
+}
+
+function repairJsonLikeString(input) {
+  const str = String(input || "");
+  if (!str) return str;
+
+  let out = "";
+  let inString = false;
+  let escaping = false;
+
+  for (let i = 0; i < str.length; i += 1) {
+    const ch = str[i];
+
+    if (escaping) {
+      out += ch;
+      escaping = false;
+      continue;
+    }
+
+    if (ch === "\\") {
+      out += ch;
+      escaping = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      out += ch;
+      inString = !inString;
+      continue;
+    }
+
+    // JSON strings cannot contain raw line breaks.
+    if (inString && ch === "\n") {
+      out += "\\n";
+      continue;
+    }
+    if (inString && ch === "\r") {
+      out += "\\r";
+      continue;
+    }
+
+    out += ch;
+  }
+
+  return out;
 }
 
 function stripScripts(html) {
