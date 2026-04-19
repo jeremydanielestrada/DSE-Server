@@ -68,8 +68,55 @@ function extractCodeBlocks(text) {
   };
 }
 
+function getNested(obj, path) {
+  if (!obj || typeof obj !== "object") return undefined;
+  const keys = String(path).split(".");
+  let cur = obj;
+  for (const key of keys) {
+    if (!cur || typeof cur !== "object") return undefined;
+    cur = cur[key];
+  }
+  return cur;
+}
+
+function pickFirstNonEmptyString(obj, paths) {
+  for (const path of paths) {
+    const value = getNested(obj, path);
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return "";
+}
+
+function collectStringValuesDeep(value, out = [], seen = new Set()) {
+  if (value == null) return out;
+  if (typeof value === "string") {
+    out.push(value);
+    return out;
+  }
+  if (typeof value !== "object") return out;
+  if (seen.has(value)) return out;
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectStringValuesDeep(item, out, seen);
+    return out;
+  }
+
+  for (const v of Object.values(value)) {
+    collectStringValuesDeep(v, out, seen);
+  }
+  return out;
+}
+
+function extractCodeBlocksFromObjectText(obj) {
+  const chunks = collectStringValuesDeep(obj, []);
+  const joined = chunks.join("\n\n");
+  return extractCodeBlocks(joined);
+}
+
 function buildLegacyFromMaybeMarkdown(aiResponse) {
-  const { html: improved_html, css: improved_css } = extractCodeBlocks(aiResponse);
+  const { html: improved_html, css: improved_css } =
+    extractCodeBlocks(aiResponse);
   if (!improved_html && !improved_css) return null;
   return {
     summary_markdown: "",
@@ -98,8 +145,12 @@ function normalizeToLegacyFields(parsed) {
           .slice(0, 6)
           .map((it) => {
             const title = it?.title ? `- **${it.title}**` : "- **Issue**";
-            const snippet = it?.snippet ? `\n  - Example: \`${it.snippet}\`` : "";
-            const why = it?.why_it_matters ? `\n  - Why: ${it.why_it_matters}` : "";
+            const snippet = it?.snippet
+              ? `\n  - Example: \`${it.snippet}\``
+              : "";
+            const why = it?.why_it_matters
+              ? `\n  - Why: ${it.why_it_matters}`
+              : "";
             const steps = Array.isArray(it?.fix_steps)
               ? `\n  - Fix:\n${it.fix_steps
                   .slice(0, 6)
@@ -119,22 +170,68 @@ function normalizeToLegacyFields(parsed) {
       ? parsed.checklist.map((b) => `- ${b}`).join("\n")
       : "";
 
+    const improved_html = unescapeNewlines(
+      pickFirstNonEmptyString(parsed, [
+        "improved_html",
+        "improvedHtml",
+        "html",
+        "html_code",
+        "suggested_html",
+        "after_html",
+        "code.html",
+      ]),
+    );
+    const improved_css = unescapeNewlines(
+      pickFirstNonEmptyString(parsed, [
+        "improved_css",
+        "improvedCss",
+        "css",
+        "css_code",
+        "suggested_css",
+        "after_css",
+        "code.css",
+      ]),
+    );
+
     return {
       summary_markdown,
       issues_markdown,
-      improved_html: unescapeNewlines(parsed.improved_html || ""),
-      improved_css: unescapeNewlines(parsed.improved_css || ""),
+      improved_html: improved_html || "",
+      improved_css: improved_css || "",
       why_markdown,
       checklist_markdown,
     };
   }
 
   // legacy passthrough
+  const improved_html = unescapeNewlines(
+    pickFirstNonEmptyString(parsed, [
+      "improved_html",
+      "improvedHtml",
+      "html",
+      "html_code",
+      "suggested_html",
+      "after_html",
+      "code.html",
+    ]),
+  );
+  const improved_css = unescapeNewlines(
+    pickFirstNonEmptyString(parsed, [
+      "improved_css",
+      "improvedCss",
+      "css",
+      "css_code",
+      "suggested_css",
+      "after_css",
+      "code.css",
+    ]),
+  );
+
   return {
     summary_markdown: parsed.summary_markdown || "",
     issues_markdown: parsed.issues_markdown || "",
-    improved_html: unescapeNewlines(parsed.improved_html || ""),
-    improved_css: unescapeNewlines(parsed.improved_css || ""),
+    improved_html: improved_html || "",
+    improved_css: improved_css || "",
     why_markdown: parsed.why_markdown || "",
     checklist_markdown: parsed.checklist_markdown || "",
   };
@@ -175,7 +272,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const rl = rateLimit(req, { keyPrefix: "suggest", limit: 5, windowMs: 60_000 });
+  const rl = rateLimit(req, {
+    keyPrefix: "suggest",
+    limit: 5,
+    windowMs: 60_000,
+  });
   if (!rl.allowed) {
     res.setHeader("Retry-After", String(Math.ceil(rl.retryAfterMs / 1000)));
     return res.status(429).json({
@@ -205,7 +306,11 @@ export default async function handler(req, res) {
   const messages = buildSuggestTutorMessages({ html, css });
 
   try {
-    const { response, text: errorBody, json: data } = await groqChatCompletions({
+    const {
+      response,
+      text: errorBody,
+      json: data,
+    } = await groqChatCompletions({
       model: "llama-3.3-70b-versatile", // Updated to current Groq model (was llama-3.1-70b-versatile)
       messages,
       temperature: 0.3, // Lower temperature for more consistent, focused responses
@@ -214,11 +319,14 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const retryAfterMs =
-        extractRetryAfterMs(errorBody) || extractRetryAfterMs(data?.error?.message);
+        extractRetryAfterMs(errorBody) ||
+        extractRetryAfterMs(data?.error?.message);
       const isRateLimit =
         response.status === 429 ||
         data?.error?.code === "rate_limit_exceeded" ||
-        String(errorBody || "").toLowerCase().includes("rate limit");
+        String(errorBody || "")
+          .toLowerCase()
+          .includes("rate limit");
 
       console.error("Groq API Error Details:", {
         status: response.status,
@@ -229,7 +337,7 @@ export default async function handler(req, res) {
       if (isRateLimit) {
         res.setHeader(
           "Retry-After",
-          String(Math.ceil(((retryAfterMs ?? 60_000) / 1000))),
+          String(Math.ceil((retryAfterMs ?? 60_000) / 1000)),
         );
         return res.status(429).json({
           success: false,
@@ -262,19 +370,49 @@ export default async function handler(req, res) {
       parsed_legacy = buildLegacyFromMaybeMarkdown(aiResponse);
     }
 
+    if (parsed_legacy) {
+      const hasHtml = Boolean(
+        parsed_legacy.improved_html && parsed_legacy.improved_html.trim(),
+      );
+      const hasCss = Boolean(
+        parsed_legacy.improved_css && parsed_legacy.improved_css.trim(),
+      );
+      if (!hasHtml && !hasCss) {
+        const extracted = parsed
+          ? extractCodeBlocksFromObjectText(parsed)
+          : extractCodeBlocks(aiResponse);
+        if (extracted.html || extracted.css) {
+          parsed_legacy = {
+            ...parsed_legacy,
+            improved_html: extracted.html || "",
+            improved_css: extracted.css || "",
+          };
+        }
+      }
+    }
+
     // Enforce v2 safety: ensure preview + code exist even if model omits them
     if (parsed && parsed.version === "v2") {
-      if (typeof parsed.improved_html !== "string" || !parsed.improved_html.trim()) {
+      if (
+        typeof parsed.improved_html !== "string" ||
+        !parsed.improved_html.trim()
+      ) {
         parsed.improved_html = stripScripts(html).slice(0, 20_000);
       } else {
         parsed.improved_html = stripScripts(parsed.improved_html);
       }
 
-      if (typeof parsed.improved_css !== "string" || !parsed.improved_css.trim()) {
+      if (
+        typeof parsed.improved_css !== "string" ||
+        !parsed.improved_css.trim()
+      ) {
         parsed.improved_css = String(css || "").slice(0, 20_000);
       }
 
-      if (typeof parsed.preview_html !== "string" || !parsed.preview_html.trim()) {
+      if (
+        typeof parsed.preview_html !== "string" ||
+        !parsed.preview_html.trim()
+      ) {
         parsed.preview_html = buildPreviewHtmlDoc({
           htmlBody: parsed.improved_html,
           cssText: parsed.improved_css,
@@ -287,8 +425,12 @@ export default async function handler(req, res) {
     // Safety fallback: if the model returned JSON but omitted code suggestions,
     // fall back to the original extracted code so the UI can still render.
     if (parsed_legacy) {
-      const hasHtml = Boolean(parsed_legacy.improved_html && parsed_legacy.improved_html.trim());
-      const hasCss = Boolean(parsed_legacy.improved_css && parsed_legacy.improved_css.trim());
+      const hasHtml = Boolean(
+        parsed_legacy.improved_html && parsed_legacy.improved_html.trim(),
+      );
+      const hasCss = Boolean(
+        parsed_legacy.improved_css && parsed_legacy.improved_css.trim(),
+      );
       if (!hasHtml && !hasCss) {
         parsed_legacy = {
           ...parsed_legacy,

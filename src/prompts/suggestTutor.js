@@ -59,6 +59,7 @@ Avoid advanced optimizations unless necessary.
 - When you point out a problem, include a short snippet from the student's code that shows it (1–2 lines max).
 - Keep changes minimal and preserve the student's intent/design.
 - In the improved code fields, do NOT use placeholders. Output real improved code.
+- \`improved_html\` and \`improved_css\` must NEVER be empty. If no change is needed, return the original code.
 - Limit length: max 5 bullets per list.
 
 ## RESPONSE FORMAT (IMPORTANT):
@@ -91,6 +92,7 @@ Rules:
 - \`preview_html\` must be a FULL HTML document (include <!doctype html>, <html>, <head>, <body>). It MUST NOT include <script>.
 - \`improved_html\` should be the improved BODY content (not a full document).
 - \`improved_css\` should be plain CSS only.
+- If unsure, still return best-effort complete code in both \`improved_html\` and \`improved_css\`.
 - Do not include any other keys.
 - Do not include any text before or after the JSON.`;
 
